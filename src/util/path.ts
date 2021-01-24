@@ -1,5 +1,3 @@
-import fastGlob from "fast-glob";
-
 const backSlashes = /\\+/g;
 const trailingSlash = /\/+$/;
 const tsExtension = /\.ts(x?)$/;
@@ -22,7 +20,7 @@ export const tsToJs = (pathString: string): string =>
   pathString.replace(tsExtension, ".js$1");
 
 /** Glob pattern or its array. */
-export type FilePatterns = Parameters<typeof fastGlob>[0];
+export type FilePatterns = string | string[];
 
 /** Creates a function that normalizes `FilePatterns` value. */
 export const prepareNormalizePatterns = (defaultPatterns: FilePatterns) => (
