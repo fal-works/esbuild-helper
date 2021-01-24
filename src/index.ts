@@ -1,2 +1,4 @@
 import * as transpileTs from "./transpile-ts/index.js";
-export { transpileTs };
+import * as plugins from "./plugins/global-externals.js";
+
+export { transpileTs, plugins };
