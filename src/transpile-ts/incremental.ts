@@ -8,8 +8,9 @@ interface Transpiler {
   /**
    * Transpile any source files.
    * @param srcPatterns Defaults to all `*.ts` files in `srcDir`.
+   * @returns Output filepaths.
    */
-  run: (srcPatterns?: string | string[]) => Promise<void>;
+  run: (srcPatterns?: string | string[]) => Promise<string[]>;
 
   /**
    * Dispose cache of transpiling results.
@@ -31,17 +32,17 @@ const prepareTranspileFile = (params: {
 
   const transpileFile = async (srcFile: string) => {
     srcFile = path.normalize(srcFile);
+    const outFile = path.tsToJs(srcFile.replace(leadingSrcDir, outDir));
 
     // rebuild if already built
     const rebuild = rebuildMap.get(srcFile);
     if (rebuild) {
       const result = await rebuild();
       result.warnings.forEach(onWarn);
-      return;
+      return outFile;
     }
 
     // build for the first time
-    const outFile = path.tsToJs(srcFile.replace(leadingSrcDir, outDir));
     const options: esbuild.BuildOptions & { incremental: true } = {
       entryPoints: [srcFile],
       outfile: outFile,
@@ -51,6 +52,8 @@ const prepareTranspileFile = (params: {
     const result = await esbuild.build(options);
     result.warnings.forEach(onWarn);
     rebuildMap.set(srcFile, result.rebuild);
+
+    return outFile;
   };
 
   const dispose = () => {
@@ -91,9 +94,10 @@ export const prepare = (options: Options): Transpiler => {
     const srcFiles = await fastGlob(srcPatterns, globOptions);
     if (srcFiles.length === 0) warn(`No files to transpile: ${srcPatterns}`);
 
-    await Promise.all(srcFiles.map(transpileFile));
+    const outFiles = await Promise.all(srcFiles.map(transpileFile));
 
     info(`Transpiled: ${srcPatterns}`);
+    return outFiles;
   };
 
   return { run, dispose };
