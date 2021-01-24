@@ -61,8 +61,8 @@ const prepareTranspileFile = (params: {
 };
 
 /**
- * Creates a function that transpiles TypeScript files in `srcDir` into
- * JavaScript incrementally.
+ * Creates a transpiler instance that transpiles TypeScript files in `srcDir`
+ * into JavaScript incrementally.
  * @param options `srcDir`, `outDir` and other optionals.
  */
 export const prepare = (options: Options): Transpiler => {
