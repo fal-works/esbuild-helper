@@ -21,10 +21,10 @@ interface Transpiler {
 const prepareTranspileFile = (params: {
   readonly srcDir: string;
   readonly outDir: string;
-  readonly tsconfig?: string;
+  readonly optionsOverride?: esbuild.BuildOptions;
   readonly onWarn: (message: esbuild.Message) => void;
 }) => {
-  const { srcDir, outDir, tsconfig, onWarn } = params;
+  const { srcDir, outDir, optionsOverride, onWarn } = params;
 
   const rebuildMap = new Map<string, esbuild.BuildInvalidate>();
   const leadingSrcDir = new RegExp(`^${srcDir}`);
@@ -40,15 +40,15 @@ const prepareTranspileFile = (params: {
       return;
     }
 
-    const outFile = path.tsToJs(srcFile.replace(leadingSrcDir, outDir));
-
     // build for the first time
-    const result = await esbuild.build({
+    const outFile = path.tsToJs(srcFile.replace(leadingSrcDir, outDir));
+    const options: esbuild.BuildOptions & { incremental: true } = {
       entryPoints: [srcFile],
       outfile: outFile,
-      tsconfig,
       incremental: true,
-    });
+    };
+    Object.assign(options, optionsOverride);
+    const result = await esbuild.build(options);
     result.warnings.forEach(onWarn);
     rebuildMap.set(srcFile, result.rebuild);
   };
@@ -82,7 +82,7 @@ export const prepare = (options: Options): Transpiler => {
   const { transpileFile, dispose } = prepareTranspileFile({
     srcDir,
     outDir,
-    tsconfig: options.tsconfig,
+    optionsOverride: options.optionsOverride,
     onWarn: (message) => warn(message),
   });
 

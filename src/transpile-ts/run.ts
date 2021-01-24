@@ -13,20 +13,20 @@ export const run = async (options: Options): Promise<void> => {
 
   const srcDir = path.normalize(options.srcDir);
   const outDir = path.normalize(options.outDir);
-  const { ignorePatterns, tsconfig } = options;
 
   const srcPattern = `${srcDir}/**/*.ts`;
   const srcFiles = await fastGlob(srcPattern, {
     onlyFiles: true,
-    ignore: ignorePatterns,
+    ignore: options.ignorePatterns,
   });
   if (srcFiles.length === 0) warn(`No files to transpile: ${srcPattern}`);
 
-  const transpile = esbuild.build({
+  const buildOptions: esbuild.BuildOptions = {
     entryPoints: srcFiles,
     outdir: outDir,
-    tsconfig,
-  });
+  };
+  Object.assign(buildOptions, options.optionsOverride);
+  const transpile = esbuild.build(buildOptions);
 
   const result = await transpile;
   result.warnings.forEach((message) => warn(message));
