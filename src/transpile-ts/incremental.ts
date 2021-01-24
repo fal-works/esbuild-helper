@@ -9,7 +9,7 @@ interface Transpiler {
    * Transpile any source files.
    * @param srcPatterns Defaults to all `*.ts` files in `srcDir`.
    */
-  transpile: (srcPatterns?: string | string[]) => Promise<void>;
+  run: (srcPatterns?: string | string[]) => Promise<void>;
 
   /**
    * Dispose cache of transpiling results.
@@ -86,7 +86,7 @@ export const prepare = (options: Options): Transpiler => {
     onWarn: (message) => warn(message),
   });
 
-  const transpile: Transpiler["transpile"] = async (srcPatterns) => {
+  const run: Transpiler["run"] = async (srcPatterns) => {
     srcPatterns = normalizeSrcPatterns(srcPatterns);
     const srcFiles = await fastGlob(srcPatterns, globOptions);
     if (srcFiles.length === 0) warn(`No files to transpile: ${srcPatterns}`);
@@ -96,5 +96,5 @@ export const prepare = (options: Options): Transpiler => {
     info(`Transpiled: ${srcPatterns}`);
   };
 
-  return { transpile, dispose };
+  return { run, dispose };
 };
