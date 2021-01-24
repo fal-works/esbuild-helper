@@ -4,9 +4,18 @@ import * as logger from "../util/logger.js";
 import * as path from "../util/path.js";
 import type { Options } from "./options";
 
-type RebuildMap = Map<string, esbuild.BuildInvalidate>;
-type TranspileFunction = (srcPatterns?: path.FilePatterns) => Promise<void>;
-type Transpiler = { transpile: TranspileFunction; dispose: () => void };
+interface Transpiler {
+  /**
+   * Transpile any source files.
+   * @param srcPatterns Defaults to all `*.ts` files in `srcDir`.
+   */
+  transpile: (srcPatterns?: string | string[]) => Promise<void>;
+
+  /**
+   * Dispose cache of transpiling results.
+   */
+  dispose: () => void;
+}
 
 /** For internal use. */
 const prepareTranspileFile = (params: {
@@ -17,7 +26,7 @@ const prepareTranspileFile = (params: {
 }) => {
   const { srcDir, outDir, tsconfig, onWarn } = params;
 
-  const rebuildMap: RebuildMap = new Map();
+  const rebuildMap = new Map<string, esbuild.BuildInvalidate>();
   const leadingSrcDir = new RegExp(`^${srcDir}`);
 
   const transpileFile = async (srcFile: string) => {
@@ -56,7 +65,7 @@ const prepareTranspileFile = (params: {
  * JavaScript incrementally.
  * @param options `srcDir`, `outDir` and other optionals.
  */
-export const prepareIncremental = (options: Options): Transpiler => {
+export const prepare = (options: Options): Transpiler => {
   const { info, warn } = logger.create(options.logLevel);
 
   const srcDir = path.normalize(options.srcDir);
@@ -77,10 +86,7 @@ export const prepareIncremental = (options: Options): Transpiler => {
     onWarn: (message) => warn(message),
   });
 
-  /**
-   * @param srcPatterns Defaults to all `*.ts` files in `srcDir`.
-   */
-  const transpile: TranspileFunction = async (srcPatterns) => {
+  const transpile: Transpiler["transpile"] = async (srcPatterns) => {
     srcPatterns = normalizeSrcPatterns(srcPatterns);
     const srcFiles = await fastGlob(srcPatterns, globOptions);
     if (srcFiles.length === 0) warn(`No files to transpile: ${srcPatterns}`);
